@@ -1,8 +1,8 @@
-name:                HaskellEditor
+name:                haskell-editor
 version:             0.1.0.0
 synopsis:            Simple text editor using Haskell
 description:         Please see README.md
-homepage:            https://github.com/githubuser/HaskellEditor#readme
+homepage:            https://github.com/koflerdavid/haskell-editor#readme
 license:             BSD3
 license-file:        LICENSE
 author:              David Kofler
@@ -12,7 +12,7 @@ category:            Application
 build-type:          Simple
 cabal-version:       >=1.10
 
-executable HaskellEditor
+executable haskell-editor
   hs-source-dirs:      app
   main-is:             Main.hs
   other-modules:       App
@@ -23,7 +23,7 @@ executable HaskellEditor
                      , containers
                      , gtk3
                      , text
-                     , HaskellEditor
+                     , haskell-editor
 
 library
   hs-source-dirs:      lib
@@ -37,3 +37,7 @@ library
                      , mtl
                      , text
                      , transformers
+
+source-repository head
+  type:     git
+  location: https://github.com/koflerdavid/haskell-editor
