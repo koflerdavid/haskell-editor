@@ -13,7 +13,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 executable HaskellEditor
-  hs-source-dirs:      src
+  hs-source-dirs:      app
   main-is:             Main.hs
   other-modules:       App
                      , Edit
