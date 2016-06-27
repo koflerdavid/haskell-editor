@@ -128,7 +128,7 @@ showErrorMessageDialog message = single $ do
   widgetShowAll dialog
   return None
 
-type View = TextView
+type View = ScrolledWindow
 
 -- Since the
 initView :: Editor -> (Message -> IO ()) -> IO View
@@ -136,7 +136,11 @@ initView _editor sendMsg = do
   textBuffer <- textBufferNew Nothing
   textView <- textViewNewWithBuffer textBuffer
   sendMsg (TextBufferCreated textBuffer)
-  return textView
+
+  scrolledWindow <- scrolledWindowNew Nothing Nothing
+  containerAdd scrolledWindow textView
+
+  return scrolledWindow
 
 updateView :: Editor -> (Message -> IO ()) -> View -> IO View
 updateView _ _ = return
