@@ -11,7 +11,10 @@ module App (
 import Edit (Editor)
 import qualified Edit as Edit
 
-import Data.IntMap as M hiding((!), map, null, update)
+import Data.IntMap (IntMap)
+import qualified Data.IntMap as M
+import Data.Maybe (fromMaybe)
+import Data.Tuple (swap)
 
 import Mvc.Gtk
 
@@ -34,7 +37,7 @@ data Message = NewFile
 
 addEditorTab :: App -> Editor -> (App, EditorId)
 addEditorTab app editor =
-  let tabs' = insert (appNextId app) editor (appEditorTabs app) in
+  let tabs' = M.insert (appNextId app) editor (appEditorTabs app) in
   (app { appEditorTabs = tabs', appNextId = succ . appNextId $ app}, appNextId app)
 
 init :: [String] -> (App, Cmd Message)
@@ -59,16 +62,18 @@ update (EditorMsg editorId msg) app =
   case editorId `M.lookup` appEditorTabs app of
     Nothing -> (app, none)
     Just editor -> let (editor', cmd) = Edit.update msg editor in
-      app { appEditorTabs = insert editorId editor' (appEditorTabs app) }
+      app { appEditorTabs = M.insert editorId editor' (appEditorTabs app) }
         ! wrapInner (EditorMsg editorId) cmd
 
 update RequestCloseEditor app = undefined
 
 update (CloseEditor editorId) app =
-  app { appEditorTabs = editorId `delete` appEditorTabs app } ! none
+  app { appEditorTabs = editorId `M.delete` appEditorTabs app } ! none
 
 data View = View {
   vMainWindow :: Window
+, vNotebook :: Notebook
+, vTabsToEditors :: IntMap Int
 }
 
 initView :: App -> (Message -> IO ()) -> IO View
@@ -78,18 +83,22 @@ initView app sendMsg = do
   set window [containerBorderWidth := 10]
   set window [windowDefaultWidth := 1000, windowDefaultHeight := 500]
 
-  views <- (`traverseWithKey` appEditorTabs app) $ \ eId editor ->
-    Edit.initView editor (sendMsg . EditorMsg eId)
+  notebook <- notebookNew
+
+  editorToTabs <- (`M.traverseWithKey` appEditorTabs app) $ \ eId editor -> do
+    editorView <- Edit.initView editor (sendMsg . EditorMsg eId)
+    let label = fromMaybe "Opening..." $ Edit.currentFilePath editor
+    notebookAppendPage notebook editorView label
 
   vBox <- vBoxNew False 0
   set vBox [boxHomogeneous := False]
 
-  boxPackStart vBox (snd . findMin $ views) PackGrow 0
+  boxPackStart vBox notebook PackGrow 0
 
   containerAdd window vBox
   widgetShowAll window
 
-  return (View window)
+  return $ View window notebook $ M.fromList . map swap . M.toAscList $ editorToTabs
 
 updateView :: App -> ViewM Message View ()
 updateView _ = return ()
