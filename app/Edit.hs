@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
+
 module Edit (
   Editor
 , Message
@@ -9,6 +10,8 @@ module Edit (
 , initView
 , updateView
 , finalize
+
+, currentFilePath
 ) where
 
 import Data.Maybe (fromJust, isNothing)
@@ -28,9 +31,10 @@ data Editor = Init (Maybe FilePath)
     }
 
 data EditorState = Unsaved
-                 | OpenFile FilePath
-                 | Opening FilePath
-                 | Saving FilePath
+                 | OpenFile { esFilePath :: FilePath }
+                 | Opening { esFilePath :: FilePath }
+                 | Saving { esFilePath :: FilePath }
+                 deriving (Eq)
 
 data Message = None
              | TextBufferCreated TextBuffer
@@ -139,3 +143,9 @@ updateView _ _ = return
 
 finalize :: Editor -> View -> IO ()
 finalize _ _ = return ()
+
+
+currentFilePath :: Editor -> Maybe FilePath
+currentFilePath (Init path) = path
+currentFilePath (Editor Unsaved _) = Nothing
+currentFilePath (Editor state _) = Just (esFilePath state)
