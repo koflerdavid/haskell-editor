@@ -12,12 +12,16 @@ module Edit (
 , finalize
 
 , currentFilePath
+, editorTitle
+, isStale
 ) where
 
+import Data.Bool (bool)
 import Data.Maybe (fromMaybe)
 import Data.Text as T hiding (null)
 import Data.Text.IO as TIO
 --import Control.Monad (when)
+import System.FilePath
 import System.IO.Error
 
 import Mvc.Gtk
@@ -159,6 +163,19 @@ currentFilePath :: Editor -> Maybe FilePath
 currentFilePath (Init path) = path
 currentFilePath (Editor Unsaved{} _) = Nothing
 currentFilePath (Editor state _) = Just (esFilePath state)
+
+editorTitle :: Editor -> String
+editorTitle editor = plainTitle editor ++ stalenessIndicator editor
+  where
+    plainTitle = fromMaybe "Unnamed" . fmap takeFileName . Edit.currentFilePath
+    stalenessIndicator :: Editor -> String
+    stalenessIndicator = maybe "" ("" `bool` "*") . isStale
+
+isStale :: Editor -> Maybe Bool
+isStale Init{} = Nothing
+isStale (edtState -> Unsaved staleness) = Just staleness
+isStale (edtState -> OpenFile _ staleness) = Just staleness
+isStale _ = Nothing
 
 instance Show (Editor) where
   show (Init Nothing) = "Init Nothing"
