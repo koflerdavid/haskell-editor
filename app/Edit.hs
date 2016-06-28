@@ -14,7 +14,7 @@ module Edit (
 , currentFilePath
 ) where
 
-import Data.Maybe (fromJust, isNothing)
+import Data.Maybe (fromMaybe)
 import Data.Text as T hiding (null)
 import Data.Text.IO as TIO
 --import Control.Monad (when)
@@ -76,10 +76,9 @@ update Save editor@(edtState -> Unsaved) = editor ! askForSaveFileName
   where askForSaveFileName = single $ postGUISync $ do
           fcDialog <- fileChooserDialogNew Nothing Nothing FileChooserActionSave actions
           responseId <- dialogRun fcDialog
-          filename <- fileChooserGetFilename fcDialog
-          if isNothing filename || responseId == ResponseReject
-            then return None
-            else return (SaveAs (fromJust filename))
+          mFilename <- fileChooserGetFilename fcDialog
+          if responseId == ResponseReject then return None
+            else return $ maybe None SaveAs mFilename
         actions = [("Save", ResponseAccept), ("Cancel", ResponseReject)] :: [(Text, ResponseId)]
 
 update Save editor@(edtState -> OpenFile path) =
