@@ -7,6 +7,7 @@ module App.View (
 , finalize
 ) where
 
+import           Data.Functor    (void)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Tuple      (swap)
@@ -30,7 +31,7 @@ data View = View {
 initView :: App -> (Message -> IO ()) -> IO View
 initView app sendMsg = do
   window <- windowNew
-  _ <- on window objectDestroy mainQuit -- TODO: throw framework signal to quit app?
+  void $ on window objectDestroy mainQuit -- TODO: throw framework signal to quit app?
   set window [containerBorderWidth := 10]
   set window [windowDefaultWidth := 1000, windowDefaultHeight := 500]
 
@@ -102,7 +103,7 @@ createMenuBar _app sendMsg = do
 
   -- create and connect menu items
   newFile <- menuItemNewWithMnemonic ("_New" :: String)
-  _ <- on newFile menuItemActivated $ sendMsg NewFile
+  void $ on newFile menuItemActivated $ sendMsg NewFile
 
   -- add menu items to menu
   fileMenu <- menuNew
@@ -131,7 +132,7 @@ removeClosedEditorTabs app view@(View {..}) = do
       tabsToRemove = (`M.member` removedEditorIds) `M.filter` vTabsToEditors
 
   -- Remove all tabs which don't have a corresponding editor in the model
-  _ <- traverse (notebookRemovePage vTabBar . _unTabId) $ M.keys tabsToRemove
+  void $ traverse (notebookRemovePage vTabBar . _unTabId) $ M.keys tabsToRemove
 
   return view
     { vEditorsToTabs = vEditorsToTabs M.\\ removedEditorIds

@@ -8,6 +8,7 @@
 > import           Control.Concurrent.SplitChan (SinkChan, SourceChan)
 > import qualified Control.Concurrent.SplitChan as SplitChan
 > import           Control.Monad.Loops          (whileJust_)
+> import           Data.Functor                 (void)
 > import           Data.IORef                   as IORef
 
 > import           Graphics.UI.Gtk
@@ -37,9 +38,8 @@
 >     refState <- IORef.newIORef (model, gtkUi)
 >     let program = Program refState update updateView finalize
 
->     _workerThreadId <- forkIO $ workerThread jobSource messageSink
->     _modelUpdateThreadId <- forkIO $
->       modelUpdateThread program (runJob jobSink) messageSource messageSink
+>     void $ forkIO $ workerThread jobSource messageSink
+>     void $ forkIO $ modelUpdateThread program (runJob jobSink) messageSource messageSink
 
 >     runJob jobSink cmd
 >     mainGUI
