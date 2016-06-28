@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE ViewPatterns      #-}
 
 module Edit (
   Editor
@@ -16,21 +16,20 @@ module Edit (
 , isStale
 ) where
 
-import Data.Bool (bool)
-import Data.Maybe (fromMaybe)
-import Data.Text as T hiding (null)
-import Data.Text.IO as TIO
---import Control.Monad (when)
-import System.FilePath
-import System.IO.Error
+import           Data.Bool       (bool)
+import           Data.Maybe      (fromMaybe)
+import           Data.Text       as T hiding (null)
+import           Data.Text.IO    as TIO
+import           System.FilePath
+import           System.IO.Error
 
-import Mvc.Gtk
+import           Mvc.Gtk
 
 -- The Init state is necessary since the TextBuffer has to be constructed
 -- within the IO monad.
 data Editor = Init (Maybe FilePath)
   |  Editor {
-      edtState :: EditorState
+      edtState      :: EditorState
     , edtTextBuffer :: TextBuffer
     }
 

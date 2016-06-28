@@ -6,18 +6,18 @@ module App.Class (
 , EditorId(..)
 ) where
 
-import Data.Map.Strict (Map)
+import           Data.Map.Strict (Map)
 
-import Edit (Editor)
-import qualified Edit (Message)
+import           Edit            (Editor)
+import qualified Edit            (Message)
 
 newtype EditorId = EditorId { _unEditorId :: Int }
                  deriving (Enum, Eq, Ord, Show)
 
 
 data App = App {
-  appEditors :: Map EditorId Editor
-, appNextId :: !EditorId
+  appEditors    :: Map EditorId Editor
+, appNextId     :: !EditorId
 , appCurrentTab :: !EditorId
 }
 

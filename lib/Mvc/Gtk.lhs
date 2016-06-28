@@ -4,21 +4,21 @@
 > , module Mvc.Gtk.Cmd
 > ) where
 
-> import Control.Concurrent
-> import Control.Concurrent.SplitChan (SourceChan, SinkChan)
+> import           Control.Concurrent
+> import           Control.Concurrent.SplitChan (SinkChan, SourceChan)
 > import qualified Control.Concurrent.SplitChan as SplitChan
-> import Control.Monad.Loops (whileJust_)
-> import Data.IORef as IORef
+> import           Control.Monad.Loops          (whileJust_)
+> import           Data.IORef                   as IORef
 
-> import Graphics.UI.Gtk
+> import           Graphics.UI.Gtk
 
-> import Mvc.Gtk.Cmd
+> import           Mvc.Gtk.Cmd
 
 > data Program args model message gtkUi = Program {
->   progRefState :: IORef (model, gtkUi)
-> , progUpdate :: message -> model -> (model, Cmd message)
+>   progRefState   :: IORef (model, gtkUi)
+> , progUpdate     :: message -> model -> (model, Cmd message)
 > , progUpdateView :: message -> model -> (message -> IO ()) -> gtkUi -> IO gtkUi
-> , progFinalize :: model -> gtkUi -> IO ()
+> , progFinalize   :: model -> gtkUi -> IO ()
 > }
 
 > runProgramWithFlags :: Show message => args

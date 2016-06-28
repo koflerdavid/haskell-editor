@@ -5,12 +5,12 @@ module App.Model (
 
 import qualified Data.Map.Strict as M
 
-import App.Class
+import           App.Class
 
-import Mvc.Gtk
+import           Mvc.Gtk
 
-import Edit (Editor)
-import qualified Edit as Edit
+import           Edit            (Editor)
+import qualified Edit            as Edit
 
 init :: [String] -> (App, Cmd Message)
 init paths = App (M.fromList editors) (EditorId (length paths)) (EditorId 0) ! concat cmds

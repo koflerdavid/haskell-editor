@@ -7,22 +7,22 @@ module App.View (
 , finalize
 ) where
 
-import Data.Map.Strict (Map)
+import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Tuple (swap)
+import           Data.Tuple      (swap)
 
-import Graphics.UI.Gtk
+import           Graphics.UI.Gtk
 
-import App.Class
-import Edit (Editor)
+import           App.Class
+import           Edit            (Editor)
 import qualified Edit
 
 newtype TabId = TabId { _unTabId :: Int }
               deriving (Eq, Ord, Show)
 
 data View = View {
-  vMainWindow :: Window
-, vTabBar :: Notebook
+  vMainWindow    :: Window
+, vTabBar        :: Notebook
 , vEditorsToTabs :: Map EditorId TabId
 , vTabsToEditors :: Map TabId EditorId
 }
