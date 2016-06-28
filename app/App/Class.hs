@@ -1,5 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 module App.Class (
   App(..)
 , Message(..)
@@ -12,8 +10,11 @@ import           Edit            (Editor)
 import qualified Edit            (Message)
 
 newtype EditorId = EditorId { _unEditorId :: Int }
-                 deriving (Enum, Eq, Ord, Show)
+                 deriving (Eq, Ord, Show)
 
+instance Enum (EditorId) where
+  toEnum = EditorId
+  fromEnum = _unEditorId
 
 data App = App {
   appEditors    :: Map EditorId Editor
