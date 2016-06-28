@@ -1,3 +1,5 @@
+{-# LANGUAGE RecordWildCards #-}
+
 module App.View (
   View
 , initView
@@ -59,33 +61,33 @@ initView app sendMsg = do
     }
 
 updateView :: Message -> App -> (Message -> IO ()) -> View -> IO View
-updateView message app sendMessage view = do
+updateView message app sendMessage view@(View {..}) = do
   case message of
     NewFile -> do
       -- find out the new editor(s)
-      let editors = appEditors app M.\\ vEditorsToTabs view
+      let editors = appEditors app M.\\ vEditorsToTabs
 
       -- initialize their views and create tabs for them.
-      mapping <- M.traverseWithKey (addEditorTab (vTabBar view) sendMessage) editors
+      mapping <- M.traverseWithKey (addEditorTab vTabBar sendMessage) editors
 
       -- update the mapping from tabs to editors
-      return view { vEditorsToTabs = vEditorsToTabs view `M.union` mapping
-                  , vTabsToEditors = vTabsToEditors view `M.union` invertedMap mapping
+      return view { vEditorsToTabs = vEditorsToTabs `M.union` mapping
+                  , vTabsToEditors = vTabsToEditors `M.union` invertedMap mapping
                   }
 
     -- Look up tabId and editor for eId. If it could not found there is some
     -- cleanup to do
     EditorMsg eId _ -> maybe (removeClosedEditorTabs app view) removeTab $ do
                 editor <- eId `M.lookup` appEditors app
-                tabId <- eId `M.lookup` vEditorsToTabs view
+                tabId <- eId `M.lookup` vEditorsToTabs
                 return (editor, tabId)
         where removeTab (editor, tabId) = do
                 -- Lookup tab. If it is not present, do some cleanup.
-                mTab <- notebookGetNthPage (vTabBar view) (_unTabId tabId)
+                mTab <- notebookGetNthPage vTabBar (_unTabId tabId)
                 case mTab of
                   Nothing -> removeClosedEditorTabs app view
                   Just tab -> do
-                    notebookSetTabLabelText (vTabBar view) tab (Edit.editorTitle editor)
+                    notebookSetTabLabelText vTabBar tab (Edit.editorTitle editor)
                     return view
 
     _ -> return view
@@ -122,18 +124,18 @@ addEditorTab notebook sendMsg eId editor = do
   fmap TabId (notebookAppendPage notebook editorView (Edit.editorTitle editor)) <* widgetShowAll editorView
 
 removeClosedEditorTabs :: App -> View -> IO View
-removeClosedEditorTabs app view = do
+removeClosedEditorTabs app view@(View {..}) = do
   -- Look for editors which are not contained anymore in the model
-  let removedEditorIds = vEditorsToTabs view M.\\ appEditors app
+  let removedEditorIds = vEditorsToTabs M.\\ appEditors app
       -- Look for all tabs which have to be removed
-      tabsToRemove = (`M.member` removedEditorIds) `M.filter` vTabsToEditors view
+      tabsToRemove = (`M.member` removedEditorIds) `M.filter` vTabsToEditors
 
   -- Remove all tabs which don't have a corresponding editor in the model
-  _ <- traverse (notebookRemovePage (vTabBar view) . _unTabId) $ M.keys tabsToRemove
+  _ <- traverse (notebookRemovePage vTabBar . _unTabId) $ M.keys tabsToRemove
 
   return view
-    { vEditorsToTabs = vEditorsToTabs view M.\\ removedEditorIds
-    , vTabsToEditors = vTabsToEditors view M.\\ tabsToRemove
+    { vEditorsToTabs = vEditorsToTabs M.\\ removedEditorIds
+    , vTabsToEditors = vTabsToEditors M.\\ tabsToRemove
     }
 
 invertedMap :: (Ord a, Ord b) => Map a b -> Map b a
