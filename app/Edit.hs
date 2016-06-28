@@ -30,11 +30,11 @@ data Editor = Init (Maybe FilePath)
     , edtTextBuffer :: TextBuffer
     }
 
-data EditorState = Unsaved
-                 | OpenFile { esFilePath :: FilePath }
+data EditorState = Unsaved { esIsStale :: Bool }
+                 | OpenFile { esFilePath :: FilePath, esIsStale :: Bool }
                  | Opening { esFilePath :: FilePath }
-                 | Saving { esFilePath :: FilePath }
-                 deriving (Eq)
+                 | Saving { esFilePath :: FilePath, esWasStale :: Bool }
+                 deriving (Eq, Show)
 
 data Message = None
              | TextBufferCreated TextBuffer
@@ -42,11 +42,12 @@ data Message = None
              | Save
              | SaveAs FilePath
              | SavingSuccessful FilePath
+             | MakeStale
              | GotError String
              deriving (Show)
 
 instance Show TextBuffer where
-  show = const "<<TextBuffer>>"
+  show = const "Gtk3TextBuffer"
 
 init :: Maybe String -> (Editor, Cmd Message)
 
@@ -56,7 +57,7 @@ init arg = Init arg ! none
 update :: Message -> Editor -> (Editor, Cmd Message)
 
 -- Save the empty buffer. The editor is not currently associated with a file
-update (TextBufferCreated textBuffer) (Init Nothing) = Editor Unsaved textBuffer ! none
+update (TextBufferCreated textBuffer) (Init Nothing) = Editor (Unsaved False) textBuffer ! none
 
 -- Save the empty buffer and prepare to load a file.
 update (TextBufferCreated textBuffer) (Init (Just path)) =
@@ -69,10 +70,10 @@ update (TextBufferCreated textBuffer) (Init (Just path)) =
 update TextBufferCreated{} editor@Editor{} = editor ! none
 
 update (FileOpened text) editor@(edtState -> Opening path) =
-    editor { edtState = OpenFile path } ! setText
+    editor { edtState = OpenFile path False } ! setText
   where setText = single $ textBufferSetText (edtTextBuffer editor) text >> return None
 
-update Save editor@(edtState -> Unsaved) = editor ! askForSaveFileName
+update Save editor@(edtState -> Unsaved{}) = editor ! askForSaveFileName
   where askForSaveFileName = single $ postGUISync $ do
           fcDialog <- fileChooserDialogNew Nothing Nothing FileChooserActionSave actions
           responseId <- dialogRun fcDialog
@@ -81,31 +82,36 @@ update Save editor@(edtState -> Unsaved) = editor ! askForSaveFileName
             else return $ maybe None SaveAs mFilename
         actions = [("Save", ResponseAccept), ("Cancel", ResponseReject)] :: [(Text, ResponseId)]
 
-update Save editor@(edtState -> OpenFile path) =
-  editor { edtState = Saving path} ! saveFile (edtTextBuffer editor) path
+update Save editor@(edtState -> OpenFile path stale) =
+  editor { edtState = Saving path stale } ! saveFile (edtTextBuffer editor) path
 
 -- Do nothing. Either the editor is not initialized yet, or in progress loading or saving something.
 update Save editor = editor ! none
 
 update msg@(SaveAs path) editor@Editor{} = case edtState editor of
-    Unsaved -> editor { edtState = Saving path } ! saveFile (edtTextBuffer editor) path
+    Unsaved stale -> editor { edtState = Saving path stale } ! saveFile (edtTextBuffer editor) path
     -- The editor will possibly refer to another file
-    OpenFile _ -> editor {edtState = Saving path } ! saveFile (edtTextBuffer editor) path
+    OpenFile _ stale -> editor {edtState = Saving path stale } ! saveFile (edtTextBuffer editor) path
     -- When the editor is currently opening or closing a file we should postpone this message.
     _ -> editor ! postpone msg
 
 update (SavingSuccessful path) editor@Editor{} =
-  editor { edtState = OpenFile path } ! none
+  editor { edtState = OpenFile path False } ! none
+
+update MakeStale editor@(isStale -> Just True) = case editor of
+  Editor Unsaved{} _ -> editor { edtState = Unsaved False } ! none
+  Editor (OpenFile path _) _ -> editor { edtState = OpenFile path True } ! none
+  _ -> editor ! none
 
 -- If there is an error saving at the destination it will be nevertheless seen as
 -- the file the current editor is associated with. Subsequent savings will try
 -- this path then. Several widespread editors behave similarly, for example, Atom.
-update (GotError message) editor@(edtState -> Saving path) =
-  editor { edtState = OpenFile path } ! showErrorMessageDialog message
+update (GotError message) editor@(edtState -> Saving path wasStale) =
+  editor { edtState = OpenFile path wasStale } ! showErrorMessageDialog message
 
 -- If we fail to open a file we get an empty editor
 update (GotError message) editor@(edtState -> Opening _) =
-  editor { edtState = Unsaved } ! showErrorMessageDialog message
+  editor { edtState = Unsaved False } ! showErrorMessageDialog message
 
 update None editor = editor ! none
 
@@ -147,8 +153,14 @@ updateView _ _ = return
 finalize :: Editor -> View -> IO ()
 finalize _ _ = return ()
 
+-- Functions useful for users of this module
 
 currentFilePath :: Editor -> Maybe FilePath
 currentFilePath (Init path) = path
-currentFilePath (Editor Unsaved _) = Nothing
+currentFilePath (Editor Unsaved{} _) = Nothing
 currentFilePath (Editor state _) = Just (esFilePath state)
+
+instance Show (Editor) where
+  show (Init Nothing) = "Init Nothing"
+  show (Init (Just path)) = "Init (Just " ++ show path ++ ")"
+  show (Editor state _) = "Editor (" ++ show state ++ ")"
