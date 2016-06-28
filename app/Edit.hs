@@ -120,7 +120,7 @@ update (GotError message) editor@(edtState -> Opening _) =
 update None editor = editor ! none
 
 -- Ignore other messages
-update msg editor = editor ! single ((Prelude.putStrLn . show $ msg) >> return None)
+update msg editor = editor ! none
 
 saveFile :: TextBuffer -> FilePath -> Cmd Message
 saveFile textBuffer path = single $ (flip catchIOError) handleIOError $ do
