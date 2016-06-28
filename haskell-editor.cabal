@@ -34,6 +34,7 @@ library
   other-modules:       Control.Concurrent.SplitChan
   build-depends:       base >= 4.7 && < 5
                      , gtk3
+                     , monad-loops
                      , mtl
                      , text
                      , transformers
